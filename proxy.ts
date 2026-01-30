@@ -23,6 +23,8 @@ export async function proxy(request: NextRequest) {
     const [, payload] = authCookieValue.split('.');
     const { exp } = JSON.parse(atob(payload)) as { exp: number };
 
+    // ✅ important:
+    // We either can update cookie by expiration time or always refresh it
     const timeBeforeExpiration = exp - Math.floor(Date.now() / 1000);
     if (timeBeforeExpiration >= 300) {
       return NextResponse.next();

@@ -3,23 +3,22 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "dev-mock": "npx mcs -w & npm run dev",
-    "build": "next build",
-    "start": "next start",
+    "dev-mock": "npx mcs -w & next dev",
+    "prod-mock": "next build && (npx mcs -w & next start)",
     "lint": "eslint"
   },
   "dependencies": {
+    "@tailwindcss/postcss": "^4",
     "@tanstack/react-query": "^5.90.20",
     "jsonwebtoken": "^9.0.3",
     "next": "16.1.4",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "tailwindcss": "^4"
   },
   "devDependencies": {
     "@siberiacancode/eslint": "^2.14.0",
     "@siberiacancode/prettier": "^1.5.1",
-    "@tailwindcss/postcss": "^4",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -27,7 +26,6 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.4",
     "mock-config-server": "^4.0.3",
-    "tailwindcss": "^4",
     "typescript": "^5"
   }
 }

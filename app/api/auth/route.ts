@@ -20,9 +20,8 @@ const fetchAuth = async (request: NextRequest) => {
     headers,
     redirect: 'manual',
     body: request.body,
-    // @ts-expect-error - TODO: fix this
     duplex: 'half'
-  });
+  } as RequestInit & { duplex: 'half' });
 };
 
 const handler = async (request: NextRequest) => {

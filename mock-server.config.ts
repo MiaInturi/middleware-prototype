@@ -12,9 +12,9 @@ const mockConfig: FlatMockServerConfig = [
         routes: [
           {
             data: () => {
-              const payload = {
-                exp: Math.floor(Date.now() / 1000) + 600
-              };
+              // ✅ important:
+              // Token with 10 minutes expiration
+              const payload = { exp: Math.floor(Date.now() / 1000) + 600 };
               const token = sign(payload, 'secret');
               return token;
             }
