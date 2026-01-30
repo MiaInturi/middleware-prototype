@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Middleware prototype
 
-## Getting Started
+Этот репозиторий — небольшой прототип на Next.js (App Router) для демонстрации работы с cookie‑based авторизацией, проксированием запросов и обработкой 401 в разных слоях (server/client).
 
-First, run the development server:
+## Краткая архитектура
+
+- `/api/[[...route]]` — прокси к мок‑серверу (`mock-config-server`) на `API_ORIGIN`.
+- `/api/auth` — получает токен и выставляет auth cookie.
+- `/logout` — сбрасывает auth cookie и редиректит на `/login`.
+- `proxy.ts` — общий auth‑guard: проверка cookie, refresh токена и редирект на `/logout` при ошибках.
+
+## Почему нельзя мутировать response headers в server components
+
+В Server Components нет объекта ответа, которым можно управлять. Доступны только заголовки запроса через `next/headers`, а рендеринг стримится по мере готовности. Поэтому:
+
+- нельзя выставить `Set-Cookie` или изменить response headers внутри server component,
+- нельзя корректно сделать `redirect` через изменения заголовков.
+
+Такие операции выполняются только в route handlers или middleware. В этом проекте для server‑части используется `app/lib/server-fetch.ts`: при `401` выполняется `redirect('/logout')`, а манипуляции с cookie происходят в `app/logout/route.ts` и `proxy.ts`.
+
+## Зачем сделан /logout handler
+
+`/logout` — единая точка выхода, которая:
+
+- гарантированно удаляет auth cookie на сервере,
+- выставляет `Cache-Control: no-store` и связанные заголовки, чтобы исключить кеширование приватных данных,
+- выполняет редирект на `/login`.
+
+Это удобно и безопасно для обоих контекстов — и для server, и для client, где нельзя напрямую «почистить» httpOnly cookie.
+
+## Как проверить 401
+
+В проекте есть две страницы для имитации 401:
+
+- Клиент: `app/unauthorized-client/page.tsx` использует `clientFetch` и кидает `HttpError` при 401.
+- Сервер: `app/unauthorized-server/page.tsx` вызывает `serverFetch`, который при 401 делает `redirect('/logout')`.
+
+Обе страницы бьют в мок‑эндпоинт `/api/unauthorized`, который всегда возвращает 401 (см. `mock-server.config.ts`).
+
+## Где живет обработка 401
+
+Вынесено в `app/lib`:
+
+- `app/lib/client-fetch.ts` — выбрасывает `HttpError`, плюс хелпер `isUnauthorizedError`.
+- `app/lib/server-fetch.ts` — при `401` делает `redirect('/logout')`.
+
+На клиенте глобальная обработка 401 подключена через `app/providers.tsx` (React Query), где при ошибке выполняется `window.location.assign('/logout')`.
+
+## Запуск
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run dev-mock
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Затем откройте [http://localhost:3000](http://localhost:3000) и используйте ссылки на главной странице для проверки 401 сценариев.
