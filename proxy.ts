@@ -1,71 +1,61 @@
 import type { NextRequest } from 'next/server';
 
 import { NextResponse } from 'next/server';
+import setCookieParser from 'set-cookie-parser';
 
 import { COOKIES } from './src/utils/constants';
 
 export async function proxy(request: NextRequest) {
-  const authCookieValue = request.cookies.get(COOKIES.AUTH)?.value;
+  const refreshToken = request.cookies.get(COOKIES.REFRESH)?.value;
   const pathname = request.nextUrl.pathname;
 
   if (pathname === '/login') {
-    if (authCookieValue) {
+    if (refreshToken) {
       return NextResponse.redirect(new URL('/', request.url));
     }
     return NextResponse.next();
   }
 
-  if (!authCookieValue) {
+  if (!refreshToken) {
     return NextResponse.redirect(new URL('/logout', request.url));
   }
 
   try {
-    const [, payload] = authCookieValue.split('.');
-    const { exp } = JSON.parse(atob(payload)) as { exp: number };
-
-    // ✅ important:
-    // We either can update cookie by expiration time or always refresh it
-    const timeBeforeExpiration = exp - Math.floor(Date.now() / 1000);
-    if (timeBeforeExpiration >= 300) {
-      return NextResponse.next();
-    }
-
-    const refreshResponse = await fetch('http://localhost:3000/api/auth', {
+    const refreshResponse = await fetch('http://localhost:3000/api/auth/refresh', {
       method: 'POST',
       headers: { cookie: request.headers.get('cookie') ?? '' }
     });
     if (!refreshResponse.ok) {
-      console.error('Failed to refresh auth cookie', refreshResponse.status);
+      console.error('Failed to refresh auth cookies', refreshResponse.status);
       return NextResponse.redirect(new URL('/logout', request.url));
     }
 
-    const newAuthCookieValue = refreshResponse.headers
-      .get('Set-Cookie')
-      ?.split(';')[0]
-      ?.split('=')
-      ?.slice(1)
-      .join('=');
-    if (!newAuthCookieValue) {
-      console.error('Failed to get new auth cookie value');
+    const setCookieHeader = refreshResponse.headers.get('set-cookie');
+    if (!setCookieHeader) {
+      console.error('Failed to get refreshed auth cookies');
       return NextResponse.redirect(new URL('/logout', request.url));
     }
 
-    request.cookies.set(COOKIES.AUTH, newAuthCookieValue);
+    const parsedCookies = setCookieParser.parse(setCookieHeader);
+    for (const cookie of parsedCookies) {
+      request.cookies.set(cookie.name, cookie.value);
+    }
+
     const response = NextResponse.next();
-    response.cookies.set(COOKIES.AUTH, newAuthCookieValue);
+    response.headers.set('Set-Cookie', setCookieHeader);
     return response;
   } catch (error) {
-    console.error('Failed to check JWT expiration', error);
+    console.error('Failed to refresh auth cookies', error);
     return NextResponse.redirect(new URL('/logout', request.url));
   }
 }
 
 export const config = {
-  // TODO logout into separate route
   matcher: [
     /*
      * Match all request paths except for:
      * - api (API routes)
+     * - logout (logout route)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico, robots.txt, sitemap.xml, manifest.webmanifest (metadata files)

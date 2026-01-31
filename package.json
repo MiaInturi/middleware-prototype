@@ -14,6 +14,7 @@
     "next": "16.1.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "set-cookie-parser": "^2.7.0",
     "tailwindcss": "^4"
   },
   "devDependencies": {
@@ -23,6 +24,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/set-cookie-parser": "^2.4.10",
     "eslint": "^9",
     "eslint-config-next": "16.1.4",
     "mock-config-server": "^4.0.3",

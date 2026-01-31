@@ -7,7 +7,13 @@ import { COOKIES } from '../../src/utils/constants';
 const handler = (request: NextRequest) => {
   const response = NextResponse.redirect(new URL('/login', request.url));
   response.cookies.set({
-    name: COOKIES.AUTH,
+    name: COOKIES.ACCESS,
+    value: '',
+    path: '/',
+    maxAge: 0
+  });
+  response.cookies.set({
+    name: COOKIES.REFRESH,
     value: '',
     path: '/',
     maxAge: 0

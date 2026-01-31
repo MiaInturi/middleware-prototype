@@ -1,3 +1,4 @@
 export const COOKIES = {
-  AUTH: 'middleware-prototype-auth-cookie'
+  ACCESS: 'middleware-prototype-access-token',
+  REFRESH: 'middleware-prototype-refresh-token'
 };
