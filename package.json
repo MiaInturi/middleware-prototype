@@ -2,6 +2,7 @@
   "name": "middleware-prototype",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev-mock": "npx mcs -w & next dev",
     "prod-mock": "next build && (npx mcs -w & next start)",
